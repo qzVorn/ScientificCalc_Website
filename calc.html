@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scientific Calculator</title>
+    <link rel="stylesheet" href="calculator.css">
+</head>
+<body>
+    <div class="calculator">
+        <div class="display-container">
+            <input type="text" id="display" readonly>
+            <div id="result-display" readonly></div>
+        </div>
+        <div class="buttons">
+
+            <button class="function" onclick="addToDisplay('(')">(</button>
+            <button class="function" onclick="addToDisplay(')')">)</button>
+            <button class="function" onclick="addToDisplay('Math.sin(')" >sin</button>
+            <button class="function" onclick="addToDisplay('Math.cos(')" >cos</button>
+            <button class="function" onclick="clearDisplay()">C</button>
+
+            <button class="function" onclick="addToDisplay('Math.sqrt(')" >√</button>
+            <button class="function" onclick="addToDisplay('Math.pow(')" >x^</button>
+            <button class="function" onclick="calculatePercentage()">%</button>
+            <button class="function" onclick="addToDisplay('Math.log(')" >log</button>
+            <button class="function" onclick="backspace()">⌫</button>
+
+            <!-- Add fraction buttons -->
+            <button onclick="addToDisplay('7')">7</button>
+            <button onclick="addToDisplay('8')">8</button>
+            <button onclick="addToDisplay('9')">9</button>
+            <button class="operator" onclick="addToDisplay('/')">/</button>
+            <button class="function" onclick="addToDisplay('Math.PI')">π</button>
+
+            <button onclick="addToDisplay('4')">4</button>
+            <button onclick="addToDisplay('5')">5</button>
+            <button onclick="addToDisplay('6')">6</button>
+            <button class="operator" onclick="addToDisplay('*')">×</button>
+            <button class="function" onclick="addToDisplay('Math.E')">e</button>
+
+            <button onclick="addToDisplay('1')">1</button>
+            <button onclick="addToDisplay('2')">2</button>
+            <button onclick="addToDisplay('3')">3</button>
+            <button class="operator" onclick="addToDisplay('-')">-</button>
+            <button class="function" onclick="addToDisplay('Math.abs(')" >|x|</button>
+
+            <button onclick="addToDisplay('0')">0</button>
+            <button onclick="addToDisplay('.')">.</button>
+            <button class="equals" onclick="calculate()">=</button>
+            <button class="operator" onclick="addToDisplay('+')">+</button>
+            <button class="function" onclick="addToDisplay('!')" >!</button>
+        </div>
+    </div>
+
+    <script>
+        let display = document.getElementById('display');
+        let resultDisplay = document.getElementById('result-display');
+
+
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            if (/[\d\+\-\*\/\(\)\.]/.test(key)) {
+                addToDisplay(key);
+            } else if (key === 'Enter') {
+                calculate();
+            } else if (key === 'Backspace') {
+                backspace();
+            } else if (key === 'Escape') {
+                clearDisplay();
+            }
+        });
+
+        function addToDisplay(value) {
+            display.value += value;
+        }
+
+        function clearDisplay() {
+            display.value = '';
+            resultDisplay.innerHTML = '';
+        }
+
+        function backspace() {
+            display.value = display.value.slice(0, -1);
+        }
+
+        function factorial(n) {
+            if (n === 0 || n === 1) return 1;
+            return n * factorial(n - 1);
+        }
+
+        function calculate() {
+            try {
+                let expression = display.value;
+                
+
+                if (expression.includes('/')) {
+                    let result = evaluateWithFractions(expression);
+                    display.value = result.display;
+                    resultDisplay.innerHTML = result.simplified;
+                    return;
+                }
+
+                // Handle factorial
+                expression = expression.replace(/(\d+)!/g, (match, number) => {
+                    return factorial(parseInt(number));
+                });
+                
+                // Regular calculation
+                const result = eval(expression);
+                display.value = Number.isInteger(result) ? result : result.toFixed(8);
+                resultDisplay.innerHTML = '';
+                
+            } catch (error) {
+                display.value = 'Error';
+                resultDisplay.innerHTML = '';
+                setTimeout(clearDisplay, 1000);
+            }
+        }
+
+        function evaluateWithFractions(expression) {
+
+            let parts = expression.split(/([+\-*/])/);
+            let result = evaluateFraction(parts[0]);
+
+            for (let i = 1; i < parts.length; i += 2) {
+                let operator = parts[i];
+                let nextFraction = evaluateFraction(parts[i + 1]);
+                
+                switch(operator) {
+                    case '+':
+                        result = addFractions(result, nextFraction);
+                        break;
+                    case '-':
+                        result = subtractFractions(result, nextFraction);
+                        break;
+                    case '*':
+                        result = multiplyFractions(result, nextFraction);
+                        break;
+                    case '/':
+                        result = divideFractions(result, nextFraction);
+                        break;
+                }
+            }
+
+            let simplified = simplifyFraction(result);
+            return {
+                display: `${result.numerator}/${result.denominator}`,
+                simplified: simplified.numerator === simplified.denominator ? 
+                           `= ${simplified.numerator}` :
+                           `= ${simplified.numerator}/${simplified.denominator}`
+            };
+        }
+
+        function evaluateFraction(str) {
+            if (str.includes('/')) {
+                let [num, den] = str.split('/').map(n => parseInt(n.trim()));
+                return { numerator: num, denominator: den };
+            }
+            return { numerator: parseInt(str.trim()), denominator: 1 };
+        }
+
+        function addFractions(f1, f2) {
+            return {
+                numerator: f1.numerator * f2.denominator + f2.numerator * f1.denominator,
+                denominator: f1.denominator * f2.denominator
+            };
+        }
+
+        function subtractFractions(f1, f2) {
+            return {
+                numerator: f1.numerator * f2.denominator - f2.numerator * f1.denominator,
+                denominator: f1.denominator * f2.denominator
+            };
+        }
+
+        function multiplyFractions(f1, f2) {
+            return {
+                numerator: f1.numerator * f2.numerator,
+                denominator: f1.denominator * f2.denominator
+            };
+        }
+
+        function divideFractions(f1, f2) {
+            return {
+                numerator: f1.numerator * f2.denominator,
+                denominator: f1.denominator * f2.numerator
+            };
+        }
+
+        function simplifyFraction(fraction) {
+            let gcd = findGCD(Math.abs(fraction.numerator), Math.abs(fraction.denominator));
+            return {
+                numerator: fraction.numerator / gcd,
+                denominator: fraction.denominator / gcd
+            };
+        }
+
+        function findGCD(a, b) {
+            return b === 0 ? a : findGCD(b, a % b);
+        }
+
+        function calculatePercentage() {
+            try {
+                let currentValue = display.value;
+                
+                // If it's part of a multiplication (e.g., 100 * 50%)
+                if (currentValue.includes('*')) {
+                    let parts = currentValue.split('*');
+                    let base = eval(parts[0]);
+                    let percentage = eval(parts[1]) / 100;
+                    display.value = base * percentage;
+                }
+
+                else if (currentValue.includes('+') || currentValue.includes('-')) {
+                    let operator = currentValue.includes('+') ? '+' : '-';
+                    let parts = currentValue.split(operator);
+                    let base = eval(parts[0]);
+                    let percentage = (eval(parts[1]) / 100) * base;
+                    display.value = operator === '+' ? base + percentage : base - percentage;
+                }
+
+                else {
+                    display.value = eval(currentValue) / 100;
+                }
+                
+                // Format the result
+                if (!Number.isInteger(parseFloat(display.value))) {
+                    display.value = parseFloat(display.value).toFixed(8);
+                }
+            } catch (error) {
+                display.value = 'Error';
+                setTimeout(clearDisplay, 1000);
+            }
+        }
+    </script>
+</body>
+</html> 
